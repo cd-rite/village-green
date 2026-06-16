@@ -1,24 +1,53 @@
 <script setup>
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import Card from 'primevue/card'
 import Tag from 'primevue/tag'
 import { useAsyncState } from '../../../shared/composables/useAsyncState.js'
 import { useStatusSeverity } from '../../../shared/composables/useStatusSeverity.js'
-import { getVillageServiceRequests } from '../api/serviceRequestApi.js'
+import { getServiceRequest } from '../api/serviceRequestApi.js'
+import ServiceRequestMap from '../../../components/ServiceRequestMap.vue'
 
 const route = useRoute()
 const { getStatusSeverity } = useStatusSeverity()
 
-const villageId = computed(() => route.params.villageId)
 const serviceRequestId = computed(() => route.params.id)
 
-const { state: requests } = useAsyncState(
-  () => getVillageServiceRequests(villageId.value),
+const { state: request } = useAsyncState(
+  () => getServiceRequest(serviceRequestId.value, ['memberAddress', 'volunteerAddress']),
   { immediate: true }
 )
 
-const request = computed(() => requests.value?.find(r => r.serviceRequestId === serviceRequestId.value))
+const SHOW_MAP_KEY = 'vg.showMap'
+const showMap = ref(localStorage.getItem(SHOW_MAP_KEY) !== 'false')
+
+function toggleMap() {
+  showMap.value = !showMap.value
+  localStorage.setItem(SHOW_MAP_KEY, showMap.value)
+}
+
+const volunteerAddress = computed(() => request.value?.volunteerAddress ?? null)
+
+const mapOrigin = computed(() => {
+  const vol = volunteerAddress.value
+  if (vol) return [vol.address, vol.city, vol.state, vol.zip].filter(Boolean).join(', ')
+  const mem = request.value?.memberAddress
+  if (!mem) return ''
+  return [mem.address, mem.city, mem.state, mem.zip].filter(Boolean).join(', ')
+})
+
+const mapDestination = computed(() => {
+  const r = request.value
+  if (!r || (!r.address && !r.city)) return ''
+  return [r.address, r.city, 'RI'].filter(Boolean).join(', ')
+})
+
+const mapWaypoint = computed(() => {
+  if (!volunteerAddress.value) return ''
+  const mem = request.value?.memberAddress
+  if (!mem) return ''
+  return [mem.address, mem.city, mem.state, mem.zip].filter(Boolean).join(', ')
+})
 
 function formatDate(dateStr) {
   if (!dateStr) return null
@@ -61,18 +90,86 @@ function formatTimeRange(startStr, finishStr) {
         </div>
       </template>
       <template #content>
-        <!-- Persons Section -->
+        <!-- Member Section -->
         <div class="section">
-          <h3 class="section-header">Persons</h3>
+          <h3 class="section-header">Member</h3>
           <div v-if="request.memberFullName" class="detail-field">
-            <span class="label">Member:</span>
+            <span class="label">Name:</span>
             <span class="value"><strong>{{ request.memberFullName }}</strong></span>
           </div>
+          <template v-if="request.memberAddress">
+            <div v-if="request.memberAddress.address" class="detail-field">
+              <span class="label">Address:</span>
+              <span class="value">{{ request.memberAddress.address }}</span>
+            </div>
+            <div v-if="request.memberAddress.city || request.memberAddress.state || request.memberAddress.zip" class="detail-field">
+              <span class="label">City/State/Zip:</span>
+              <span class="value">{{ [request.memberAddress.city, request.memberAddress.state, request.memberAddress.zip].filter(Boolean).join(', ') }}</span>
+            </div>
+            <div v-if="request.memberAddress.phone" class="detail-field">
+              <span class="label">Phone:</span>
+              <div class="phone-numbers">
+                <a :href="`tel:${request.memberAddress.phone}`" class="phone-item">
+                  <i class="pi pi-phone"></i>
+                  <span class="phone-number">{{ request.memberAddress.phone }}</span>
+                </a>
+              </div>
+            </div>
+            <div v-if="request.memberAddress.cell" class="detail-field">
+              <span class="label">Cell:</span>
+              <div class="phone-numbers">
+                <a :href="`tel:${request.memberAddress.cell}`" class="phone-item">
+                  <i class="pi pi-phone"></i>
+                  <span class="phone-number">{{ request.memberAddress.cell }}</span>
+                </a>
+              </div>
+            </div>
+            <div v-if="request.memberAddress.email" class="detail-field">
+              <span class="label">Email:</span>
+              <span class="value">{{ request.memberAddress.email }}</span>
+            </div>
+          </template>
+        </div>
 
-          <div v-if="request.volunteerFullName" class="detail-field">
-            <span class="label">Volunteer:</span>
+        <!-- Volunteer Section -->
+        <div v-if="request.volunteerFullName" class="section">
+          <h3 class="section-header">Volunteer</h3>
+          <div class="detail-field">
+            <span class="label">Name:</span>
             <span class="value"><strong>{{ request.volunteerFullName }}</strong></span>
           </div>
+          <template v-if="request.volunteerAddress">
+            <div v-if="request.volunteerAddress.address" class="detail-field">
+              <span class="label">Address:</span>
+              <span class="value">{{ request.volunteerAddress.address }}</span>
+            </div>
+            <div v-if="request.volunteerAddress.city || request.volunteerAddress.state || request.volunteerAddress.zip" class="detail-field">
+              <span class="label">City/State/Zip:</span>
+              <span class="value">{{ [request.volunteerAddress.city, request.volunteerAddress.state, request.volunteerAddress.zip].filter(Boolean).join(', ') }}</span>
+            </div>
+            <div v-if="request.volunteerAddress.phone" class="detail-field">
+              <span class="label">Phone:</span>
+              <div class="phone-numbers">
+                <a :href="`tel:${request.volunteerAddress.phone}`" class="phone-item">
+                  <i class="pi pi-phone"></i>
+                  <span class="phone-number">{{ request.volunteerAddress.phone }}</span>
+                </a>
+              </div>
+            </div>
+            <div v-if="request.volunteerAddress.cell" class="detail-field">
+              <span class="label">Cell:</span>
+              <div class="phone-numbers">
+                <a :href="`tel:${request.volunteerAddress.cell}`" class="phone-item">
+                  <i class="pi pi-phone"></i>
+                  <span class="phone-number">{{ request.volunteerAddress.cell }}</span>
+                </a>
+              </div>
+            </div>
+            <div v-if="request.volunteerAddress.email" class="detail-field">
+              <span class="label">Email:</span>
+              <span class="value">{{ request.volunteerAddress.email }}</span>
+            </div>
+          </template>
         </div>
 
         <!-- Description Section -->
@@ -134,6 +231,22 @@ function formatTimeRange(startStr, finishStr) {
             <span class="value">{{ request.requestNumber }}</span>
           </div>
         </div>
+        <div v-if="mapOrigin && mapDestination" class="map-section">
+          <button class="map-toggle" @click="toggleMap">
+            {{ showMap ? 'Always Hide Maps' : 'Always Show Maps' }}
+          </button>
+          <template v-if="showMap">
+            <p class="map-route-label">
+              <template v-if="volunteerAddress">Volunteer <span class="arrow">➜</span> Member <span class="arrow">➜</span> Destination</template>
+              <template v-else>Member <span class="arrow">➜</span> Destination</template>
+            </p>
+            <ServiceRequestMap
+              :origin="mapOrigin"
+              :destination="mapDestination"
+              :waypoint="mapWaypoint"
+            />
+          </template>
+        </div>
       </template>
     </Card>
 
@@ -151,7 +264,7 @@ function formatTimeRange(startStr, finishStr) {
 }
 
 .detail-card {
-  max-width: 800px;
+  max-width: 1100px;
   border: 1px solid var(--color-border-default);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
@@ -229,8 +342,8 @@ function formatTimeRange(startStr, finishStr) {
 
 .section {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1rem 1rem;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem 1.5rem;
   margin-top: 2rem;
   margin-bottom: 2rem;
 }
@@ -261,11 +374,49 @@ function formatTimeRange(startStr, finishStr) {
 
 .description-text {
   margin: 0;
+  grid-column: 1 / -1;
   color: var(--color-text-primary);
   font-size: 1rem;
   line-height: 1.5;
   white-space: pre-wrap;
   word-break: break-word;
+}
+
+.map-section {
+  margin-top: 2rem;
+}
+
+.map-route-label {
+  margin: 0 0 0.5rem 0;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--color-text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  line-height: 1;
+}
+
+.map-route-label .arrow {
+  font-size: 1.1rem;
+  font-weight: 900;
+  vertical-align: middle;
+  position: relative;
+  top: -1px;
+}
+
+.map-toggle {
+  margin-bottom: 0.75rem;
+  padding: 0.4rem 1rem;
+  font-size: 0.9rem;
+  cursor: pointer;
+  border: 1px solid var(--color-border-default);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--color-text-primary);
+}
+
+.map-toggle:hover {
+  background: var(--color-border-default);
 }
 
 .not-found {
@@ -274,7 +425,13 @@ function formatTimeRange(startStr, finishStr) {
   color: var(--color-text-dim);
 }
 
-@media (max-width: 768px) {
+@media (max-width: 900px) {
+  .section {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 600px) {
   .request-detail {
     padding: 1rem;
   }

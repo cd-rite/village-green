@@ -1,6 +1,7 @@
 <script setup>
 import { computed, ref } from 'vue'
 import Card from 'primevue/card'
+import PersonMap from '../../components/PersonMap.vue'
 
 const props = defineProps({
   person: {
@@ -15,6 +16,20 @@ const props = defineProps({
 })
 
 const copiedEmail = ref(false)
+
+const SHOW_MAP_KEY = 'vg.showMap'
+const showMap = ref(localStorage.getItem(SHOW_MAP_KEY) !== 'false')
+
+function toggleMap() {
+  showMap.value = !showMap.value
+  localStorage.setItem(SHOW_MAP_KEY, showMap.value)
+}
+
+const mapAddress = computed(() => {
+  const p = props.person
+  if (!p?.address && !p?.city) return ''
+  return [p.address, p.city, p.state, p.zip].filter(Boolean).join(', ')
+})
 
 const isMember = computed(() => props.personType === 'member')
 const isVolunteer = computed(() => props.personType === 'volunteer')
@@ -168,6 +183,12 @@ const copyEmail = async (email) => {
           <span class="value">{{ person.emergencyContactEmail }}</span>
         </div>
       </div>
+      <div v-if="mapAddress" class="map-section">
+        <button class="map-toggle" @click="toggleMap">
+            {{ showMap ? 'Always Hide Maps' : 'Always Show Maps' }}
+        </button>
+        <PersonMap v-if="showMap" :address="mapAddress" />
+      </div>
     </template>
   </Card>
 
@@ -180,7 +201,7 @@ const copyEmail = async (email) => {
 @import '../styles/phone-link.css';
 
 .detail-card {
-  max-width: 800px;
+  max-width: 1100px;
   border: 1px solid var(--color-border-default);
   box-shadow: var(--box-shadow-card);
 }
@@ -220,8 +241,8 @@ const copyEmail = async (email) => {
 
 .section {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1rem 1rem;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem 1.5rem;
   margin-top: 2rem;
   margin-bottom: 2rem;
 }
@@ -315,13 +336,38 @@ const copyEmail = async (email) => {
   grid-column: 1 / -1;
 }
 
+.map-section {
+  margin-top: 2rem;
+}
+
+.map-toggle {
+  margin-bottom: 0.75rem;
+  padding: 0.4rem 1rem;
+  font-size: 0.9rem;
+  cursor: pointer;
+  border: 1px solid var(--color-border-default);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--color-text-primary);
+}
+
+.map-toggle:hover {
+  background: var(--color-border-default);
+}
+
 .not-found {
   text-align: center;
   padding: 2rem;
   color: var(--color-text-dim);
 }
 
-@media (max-width: 768px) {
+@media (max-width: 900px) {
+  .section {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 600px) {
   .section {
     grid-template-columns: 1fr;
     gap: 1rem;

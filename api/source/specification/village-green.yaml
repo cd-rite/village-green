@@ -1441,6 +1441,7 @@ paths:
       operationId: getServiceRequest
       parameters:
       - $ref: '#/components/parameters/ServiceRequestIdPath'
+      - $ref: '#/components/parameters/ServiceRequestProjectionQuery'
       responses:
         '200':
           description: Service request details
@@ -2708,6 +2709,38 @@ components:
       maximum: 4
       minimum: 1
       type: integer
+    PersonAddress:
+      additionalProperties: false
+      type: object
+      properties:
+        address:
+          type: string
+          maxLength: 300
+          nullable: true
+        city:
+          type: string
+          maxLength: 100
+          nullable: true
+        state:
+          type: string
+          maxLength: 50
+          nullable: true
+        zip:
+          type: string
+          maxLength: 20
+          nullable: true
+        phone:
+          type: string
+          maxLength: 50
+          nullable: true
+        cell:
+          type: string
+          maxLength: 50
+          nullable: true
+        email:
+          type: string
+          maxLength: 200
+          nullable: true
     ServiceRequest:
       additionalProperties: false
       type: object
@@ -2785,6 +2818,12 @@ components:
         phone:
           type: string
           maxLength: 50
+          nullable: true
+        memberAddress:
+          $ref: '#/components/schemas/PersonAddress'
+          nullable: true
+        volunteerAddress:
+          $ref: '#/components/schemas/PersonAddress'
           nullable: true
     ServiceRequestId:
       $ref: '#/components/schemas/StringIntId'
@@ -3488,6 +3527,19 @@ components:
           - completed
           - unmatched
           - cancelled
+    ServiceRequestProjectionQuery:
+      name: projection
+      in: query
+      description: Additional properties to include in the response.
+      style: form
+      explode: true
+      schema:
+        type: array
+        items:
+          type: string
+          enum:
+          - memberAddress
+          - volunteerAddress
     UserGroupIdPath:
       name: userGroupId
       in: path
