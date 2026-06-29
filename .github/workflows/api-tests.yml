@@ -1,0 +1,56 @@
+name: API tests
+
+# Black-box API integration tests (test/api). Runs the real server against a
+# disposable MySQL 8 + the mock OIDC provider — see test/api/README.md.
+#
+# Heads up: this suite is intentionally RED right now. Some tests assert secure
+# behavior the code does not yet implement, so the job fails until those guards
+# land (then it goes green automatically). See test/api/SECURITY-FINDINGS.md.
+# For that reason, don't make this a *required* check until it's green.
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+# Don't pile up runs for the same PR/branch — cancel the previous one.
+concurrency:
+  group: api-tests-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  api-tests:
+    runs-on: ubuntu-latest # GitHub-hosted runners ship Docker + Compose v2
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: |
+            api/source/package-lock.json
+            test/utils/package-lock.json
+            test/api/package-lock.json
+
+      # run.js installs deps (api/source, test/utils, test/api), brings up MySQL
+      # via docker compose, starts mock OIDC + the API, seeds, runs the tests,
+      # and tears everything down. The job's pass/fail reflects the suite result.
+      - name: Run API test suite
+        working-directory: test/api
+        run: npm test
+
+      # Keep the API server log on failure to make debugging a red run easy.
+      - name: Upload logs and test report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: api-test-artifacts
+          path: |
+            test/api/.api.log
+            test/api/.test-report.tap
+          include-hidden-files: true # dotfiles; off by default in v4
+          if-no-files-found: ignore
