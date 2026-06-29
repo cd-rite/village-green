@@ -1,4 +1,5 @@
-// Canonical test data — Rhode Island + Lovecraft themed, all fake.
+// Canonical test data — Rhode Island themed (Family Guy's Quahog, with light
+// Lovecraft place-name nods), all fake.
 //
 // IDs are explicit and fixed so seed.js and the test files share one source of
 // truth (no fragile reliance on auto-increment order). The `role` keys (full_v1,
@@ -57,21 +58,25 @@ export const users = {
 
 // person rows. Each village has a member-person and a volunteer-person, with
 // contact details populated so projection-based address leaks are observable.
-function addr (street, city, zip) {
+function person (id, villageId, fullName, street, city, zip) {
+  const parts = fullName.toLowerCase().replace(/[^a-z ]/g, '').split(/\s+/).filter(Boolean)
   return {
+    id, villageId, fullName,
     address: street, city, state: 'RI', zip,
-    email: `${street.split(' ')[0].toLowerCase()}@residents.test`,
+    email: `${parts[0]}.${parts[parts.length - 1]}@residents.test`,
     phone: '401-555-0101', cell: '401-555-0202',
   }
 }
 
 export const persons = {
-  quahogMember: { id: 1, villageId: villages.quahog.id, fullName: 'Esek Hopkins', ...addr('1 Spooner St', 'Quahog', '02860') },
-  quahogVolunteer: { id: 2, villageId: villages.quahog.id, fullName: 'Stephen Hopkins', ...addr('2 Pawtucket Ave', 'Quahog', '02860') },
-  innsmouthMember: { id: 3, villageId: villages.innsmouth.id, fullName: 'Zadok Allen', ...addr('7 Water St', 'Innsmouth', '02882') },
-  innsmouthVolunteer: { id: 4, villageId: villages.innsmouth.id, fullName: 'Obed Marsh', ...addr('8 Marsh Refinery Rd', 'Innsmouth', '02882') },
-  miskatonicMember: { id: 5, villageId: villages.miskatonic.id, fullName: 'Herbert West', ...addr('9 Crane St', 'Arkham', '02893') },
-  miskatonicVolunteer: { id: 6, villageId: villages.miskatonic.id, fullName: 'Henry Armitage', ...addr('10 Library Way', 'Arkham', '02893') },
+  // Quahog: Family Guy (31 Spooner Street is the Griffins' address)
+  quahogMember: person(1, villages.quahog.id, 'Peter Griffin', '31 Spooner St', 'Quahog', '02860'),
+  quahogVolunteer: person(2, villages.quahog.id, 'Joe Swanson', '33 Spooner St', 'Quahog', '02860'),
+  // Innsmouth / Miskatonic: low-key fake residents (the village names are the only nod)
+  innsmouthMember: person(3, villages.innsmouth.id, 'Edith Sargent', '7 Water St', 'Innsmouth', '02882'),
+  innsmouthVolunteer: person(4, villages.innsmouth.id, 'Caleb Easton', '12 Harbor Rd', 'Innsmouth', '02882'),
+  miskatonicMember: person(5, villages.miskatonic.id, 'Eleanor Vance', '9 College St', 'Arkham', '02893'),
+  miskatonicVolunteer: person(6, villages.miskatonic.id, 'Walter Brattle', '10 Library Way', 'Arkham', '02893'),
 }
 
 export const members = {
@@ -90,7 +95,7 @@ export const serviceRequests = {
   srV1: {
     id: 1, villageId: villages.quahog.id, requestNumber: 101,
     memberPersonId: persons.quahogMember.id, volunteerPersonId: persons.quahogVolunteer.id,
-    status: 'Confirmed', serviceName: 'Ride to appointment', destination: 'Arkham Sanitarium',
+    status: 'Confirmed', serviceName: 'Ride to pharmacy', destination: "Goldman's Pharmacy",
     finishAt: '2026-07-10 09:00:00',
   },
   srV2: {
@@ -102,7 +107,7 @@ export const serviceRequests = {
   srV3: {
     id: 3, villageId: villages.miskatonic.id, requestNumber: 301,
     memberPersonId: persons.miskatonicMember.id, volunteerPersonId: null,
-    status: 'Open', serviceName: 'Grocery run', destination: 'Federal Hill',
+    status: 'Open', serviceName: 'Ride to hospital', destination: 'Arkham Hospital',
     finishAt: '2026-07-12 11:00:00',
   },
 }

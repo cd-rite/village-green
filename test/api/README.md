@@ -11,7 +11,7 @@ information-exposure** correctness (only the right users see the right data).
 2. starts the existing **mock OIDC** provider (`../utils/mockOidc.js`) in-process;
 3. spawns the **real API** (`node api/source/index.js`) pointed at the test DB + mock OIDC
    (it auto-scaffolds the schema), and waits for it to reach the `available` state;
-4. **seeds** the canonical RI/Lovecraft fixtures (`setup/fixtures.js`, `setup/seed.js`);
+4. **seeds** the canonical RI-themed fixtures (`setup/fixtures.js`, `setup/seed.js`);
 5. **mints** a JWT per canonical user to `.tokens.json`;
 6. runs the `*.test.js` files (Node's built-in `node:test`, hitting the API over HTTP);
 7. tears everything down.

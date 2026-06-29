@@ -21,7 +21,7 @@ test('create returns 201 with Open status and round-trips fields', async () => {
     villageId: quahog,
     status: 'Open',
     memberPersonId: member,
-    serviceName: 'Ride to Arkham Sanitarium',
+    serviceName: 'Ride to Arkham Hospital',
     finishAt: '2026-07-20T14:00:00Z',
   }
   const { status, json } = await vgFetch(SR, { token: tokens.users.full_v1, body })
@@ -29,7 +29,7 @@ test('create returns 201 with Open status and round-trips fields', async () => {
   assert.equal(json.status, 'Open')
   assert.equal(json.villageId, quahog)
   assert.equal(json.memberPersonId, member)
-  assert.equal(json.serviceName, 'Ride to Arkham Sanitarium')
+  assert.equal(json.serviceName, 'Ride to Arkham Hospital')
   assert.equal(json.finishAt, '2026-07-20T14:00:00Z') // ISO-Z round trip
 })
 

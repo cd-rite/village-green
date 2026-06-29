@@ -159,8 +159,8 @@ test/
 **Three** villages, so a multi-grant user's roll-up has both an *included* set and an
 *excluded* target (with only two villages, "union of my grants" is indistinguishable from
 "everything"). The third village is owned by someone else and never granted to the
-multi-user, which is what proves exclusion. Theme: Rhode Island, with a Lovecraftian/
-fictional flavor — **all data is fake**.
+multi-user, which is what proves exclusion. Theme: Rhode Island — Family Guy's Quahog, with
+light Lovecraft place-name nods (Innsmouth, Miskatonic) — **all data is fake**.
 
 **Villages:** `V1` = Quahog, `V2` = Innsmouth, `V3` = Miskatonic.
 
@@ -189,10 +189,10 @@ vs. admin pair. `multi` deliberately lacks Miskatonic, the exclusion target. Res
 **Domain data per village** (themed, fake; distinct from auth users to avoid confusion):
 each village gets ≥1 person who is a member and ≥1 person who is a volunteer, with
 `address`/`city`/`state`/`zip`/`phone`/`cell`/`email` populated so a projection-leak is
-observable. Suggested domain personas — Quahog: Esek Hopkins (member), Stephen Hopkins
-(volunteer); Innsmouth: Zadok Allen (member), Obed Marsh (volunteer); Miskatonic: Herbert
-West (member), Henry Armitage (volunteer). Service requests carry themed destinations
-(e.g. "Arkham Sanitarium", "Miskatonic University", "Federal Hill"). Service requests:
+observable. Domain personas — Quahog: Peter Griffin (member), Joe Swanson (volunteer);
+Innsmouth: Edith Sargent (member), Caleb Easton (volunteer); Miskatonic: Eleanor Vance
+(member), Walter Brattle (volunteer). Service requests carry themed destinations
+(e.g. "Goldman's Pharmacy", "Miskatonic University", "Arkham Hospital"). Service requests:
 `srV1` (Quahog, member + volunteer assigned), `srV2` (Innsmouth), `srV3` (Miskatonic).
 Fixed known IDs so tests assert against specific rows, not fragile counts. Mutation tests
 create their own rows and never depend on global counts, keeping every test independent
