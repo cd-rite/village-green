@@ -50,4 +50,5 @@ jobs:
         with:
           name: api-server-log
           path: test/api/.api.log
+          include-hidden-files: true # .api.log is a dotfile; off by default in v4
           if-no-files-found: ignore

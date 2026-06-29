@@ -58,11 +58,12 @@ export const users = {
 
 // person rows. Each village has a member-person and a volunteer-person, with
 // contact details populated so projection-based address leaks are observable.
+// `address` is a generated column (concat of street + unit), so we seed `street`.
 function person (id, villageId, fullName, street, city, zip) {
   const parts = fullName.toLowerCase().replace(/[^a-z ]/g, '').split(/\s+/).filter(Boolean)
   return {
     id, villageId, fullName,
-    address: street, city, state: 'RI', zip,
+    street, city, state: 'RI', zip,
     email: `${parts[0]}.${parts[parts.length - 1]}@residents.test`,
     phone: '401-555-0101', cell: '401-555-0202',
   }

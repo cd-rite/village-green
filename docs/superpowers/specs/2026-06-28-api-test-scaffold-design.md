@@ -244,9 +244,10 @@ excluding the rest — *even when the client supplies a `villageId`*. These are 
   implicitly omniscient.
 
 ### 5. Lifecycle / correctness (`service-request/lifecycle.test.js`)
-- `POST` (member, no volunteer) → 201, `status: Open`, read-after-write body matches input.
-- `PATCH` assign volunteer → `Confirmed`; re-patch same volunteer → no duplicate
-  `email_event` (assert via DB).
+- `POST` (member, no volunteer) → 201, status **derived** to `Open`, read-after-write matches.
+- `PATCH` assigning a volunteer → status derived to `Confirmed` (`deriveStatus`).
+- Notifications are opt-in: `POST` with `notify:true` writes one `notification_event`
+  (`event_type: open`); omitting `notify` writes none (assert via DB).
 - Status-filter mapping (`cancelled` → the three DB variants); datetimes round-trip as
   ISO-`Z`.
 

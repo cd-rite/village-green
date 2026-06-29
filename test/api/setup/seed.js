@@ -7,8 +7,9 @@ import { villages, users, persons, members, volunteers, serviceRequests } from '
 
 // Tables we own, child-before-parent for clean truncation.
 const TABLES = [
-  'email_event', 'service_request', 'volunteer_capability', 'volunteer', 'member',
-  'person', 'village_grant', 'user_group_user_map', 'user_group', 'user_data', 'village',
+  'notification_event', 'service_request', 'volunteer_vetting', 'volunteer_capability',
+  'volunteer', 'member', 'person_disability', 'person', 'village_grant',
+  'user_group_user_map', 'user_group', 'user_data', 'village',
 ]
 
 export async function seed () {
@@ -42,10 +43,11 @@ export async function seed () {
     }
 
     for (const p of Object.values(persons)) {
+      // person.address is a generated column (street + unit); seed `street`.
       await conn.query(
-        `INSERT INTO person (id, village_id, full_name, address, city, state, zip, email, phone, cell)
+        `INSERT INTO person (id, village_id, full_name, street, city, state, zip, email, phone, cell)
          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [p.id, p.villageId, p.fullName, p.address, p.city, p.state, p.zip, p.email, p.phone, p.cell],
+        [p.id, p.villageId, p.fullName, p.street, p.city, p.state, p.zip, p.email, p.phone, p.cell],
       )
     }
 
