@@ -18,6 +18,11 @@ import { config } from './setup/env.js'
 import { buildTokens } from './setup/tokens.js'
 
 const KEEP = process.argv.includes('--keep')
+// Black-box coverage: instrument the API child via NODE_V8_COVERAGE, then turn its
+// V8 profiles into a report with c8. (The tests themselves don't load API code.)
+const COVERAGE = process.argv.includes('--coverage')
+const coverageDir = path.join(config.paths.apiTestDir, '.coverage')     // report output
+const coverageTmp = path.join(config.paths.apiTestDir, '.coverage-tmp') // raw V8 profiles
 const sleep = (ms) => new Promise(r => setTimeout(r, ms))
 
 function log (msg) { process.stdout.write(`\x1b[36m[run]\x1b[0m ${msg}\n`) }
@@ -64,6 +69,7 @@ function startApi () {
     VG_DEV_RESPONSE_VALIDATION: 'logOnly',
     VG_CLIENT_DISABLED: 'true',
     VG_DOCS_DISABLED: 'true',
+    ...(COVERAGE ? { NODE_V8_COVERAGE: coverageTmp } : {}),
   }
   const child = spawn('node', ['index.js'], { cwd: config.apiSourceDir, env })
   // Route the (very chatty) API logs to a file so the test reporter output stays
@@ -99,8 +105,34 @@ async function waitForApiReady (apiChild) {
 async function stopApi (apiChild) {
   if (!apiChild || apiChild.exited) return
   apiChild.kill('SIGTERM')
-  for (let i = 0; i < 10 && !apiChild.exited; i++) await sleep(200)
+  // Wait for a clean exit (the API's signal handler calls process.exit, which
+  // flushes NODE_V8_COVERAGE). Only SIGKILL as a last resort.
+  for (let i = 0; i < 25 && !apiChild.exited; i++) await sleep(200)
   if (!apiChild.exited) apiChild.kill('SIGKILL')
+}
+
+async function prepCoverage () {
+  await fs.rm(coverageTmp, { recursive: true, force: true })
+  await fs.mkdir(coverageTmp, { recursive: true })
+}
+
+function generateCoverage () {
+  // The API child wrote V8 profiles to coverageTmp on exit; report on api/source.
+  const c8 = path.join(config.paths.apiTestDir, 'node_modules', '.bin', 'c8')
+  try {
+    execFileSync(c8, [
+      'report',
+      '--temp-directory', coverageTmp,
+      '--reporter', 'text',
+      '--reporter', 'html',
+      '--report-dir', coverageDir,
+      '--include', 'api/source/**',
+      '--exclude', 'api/source/node_modules/**',
+    ], { cwd: config.repoRoot, stdio: 'inherit' })
+    log(`coverage (api/source) — HTML: ${path.relative(config.repoRoot, path.join(coverageDir, 'index.html'))}`)
+  } catch (e) {
+    log(`coverage report failed: ${e.message}`)
+  }
 }
 
 function runTests () {
@@ -133,6 +165,8 @@ async function main () {
     await oidc.start({ port: config.oidc.port })
     log(`mockOidc listening on ${config.oidc.issuer}`)
 
+    if (COVERAGE) await prepCoverage()
+
     log('starting API (node index.js) ...')
     apiChild = startApi()
     await waitForApiReady(apiChild)
@@ -152,6 +186,7 @@ async function main () {
   } finally {
     log('\ntearing down ...')
     await stopApi(apiChild)
+    if (COVERAGE) generateCoverage()
     if (oidc) { try { await oidc.stop() } catch { /* ignore */ } }
     try {
       if (KEEP) log('--keep: leaving MySQL container running.')

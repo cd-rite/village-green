@@ -16,14 +16,24 @@ information-exposure** correctness (only the right users see the right data).
 6. runs the `*.test.js` files (Node's built-in `node:test`, hitting the API over HTTP);
 7. tears everything down.
 
+## Test framework
+
+This suite uses Node's **built-in test runner** — [`node:test`](https://nodejs.org/api/test.html)
+with `node:assert/strict` — **not** mocha/chai. It's been stable since Node 20, needs no
+dependencies or config file, and runs via `node --test`. If you know mocha it maps almost
+1:1: `describe`/`it`/`before`/`after` all exist (we mostly use flat `test()`), and
+assertions are `node:assert` (`assert.equal`, `assert.deepEqual`, `assert.ok`) instead of
+chai. The only test dependencies are `mysql2` (seeding) and `c8` (coverage).
+
 ## Running
 
 Requires **Docker** (Compose v2) and **Node 18+** (developed on Node 24).
 
 ```bash
 cd test/api
-npm test          # full run (installs deps on first use)
-npm run test:keep # leave the MySQL container up for fast re-runs
+npm test           # full run (installs deps on first use)
+npm run test:keep  # leave the MySQL container up for fast re-runs
+npm run test:coverage  # same run, plus an api/source coverage report
 ```
 
 ## Expecting red
@@ -31,6 +41,50 @@ npm run test:keep # leave the MySQL container up for fast re-runs
 Some tests assert secure behavior the code does **not yet** implement, so a clean run is
 **not** all-green today. See [SECURITY-FINDINGS.md](./SECURITY-FINDINGS.md) — the red tests
 document live cross-village exposure bugs and pass automatically once those are fixed.
+
+## Coverage
+
+The API runs as a **separate process**, so coverage is collected from the server itself
+(`NODE_V8_COVERAGE` on the API child) and reported with `c8` — `node --test`'s own coverage
+would only see the test files, not the API.
+
+```bash
+npm run test:coverage
+```
+
+This prints a text summary and writes an HTML report to `test/api/.coverage/index.html`
+(both gitignored), scoped to `api/source/**` — the code the API actually executes while
+serving the tests. The report generates even on a red run.
+
+Current coverage is **~43%** of `api/source` statements — by design, the suite targets the
+authorization surface, not the whole API. Well-exercised: the service-request
+controller/service (~73%) and the auth layer (~66%). Thin: `VillageService` (~17%),
+`UserService` (~20%), `PersonService` (~40%) — consistent with the gaps below.
+
+## Not yet covered (known gaps)
+
+Deliberately scoped to authorization / information-exposure on a few resources. Notable gaps:
+
+- **Endpoints:** members, volunteers (capabilities/vetting), friends, users / user-groups /
+  grant management, village CRUD + grant management, person & service-request create/delete
+  beyond the lifecycle happy path, analytics, jobs, `op/*` (config/appdata/ce-dump/SSE).
+- **Meta roll-up:** service-requests only; persons/friends meta not covered.
+- **Scope matrix:** scope enforcement is exercised on service-requests as a representative,
+  not asserted per-endpoint across every resource.
+- **Roles:** the `roleId` tiers (1=restricted … 4=owner) aren't differentiated — whether
+  `restricted` limits visibility/actions vs `full` is untested.
+- **Group grants:** only direct user grants are seeded; grants via `user_group` are untested.
+- **Notifications:** only the create `open` event; confirmed/cancelled/reminder, patch
+  notifications, recipients, and the notification-history endpoints are untested.
+- **CE member/volunteer fields & active views:** the new fields and `active_member` /
+  `active_volunteer` filtering (e.g. inactive members hidden) aren't asserted.
+- **Validation / negative cases:** request-body 400s, pagination, projections beyond
+  `memberAddress`.
+- **State gate:** the 503-until-`available` behavior is only implicitly exercised by the
+  startup readiness probe.
+- **Client / UI:** out of scope.
+
+(The 6 red tests are known *bugs*, not coverage gaps — see SECURITY-FINDINGS.md.)
 
 ## Layout
 
