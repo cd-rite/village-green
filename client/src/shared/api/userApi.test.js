@@ -5,16 +5,17 @@ vi.mock('./apiClient.js', () => ({
 }))
 
 import { apiCall } from './apiClient.js'
-import { createUser, updateUser, deleteUser } from './userApi.js'
+import { createUser, updateUser, deleteUser, getUsersWithGrants } from './userApi.js'
 
 describe('userApi', () => {
   beforeEach(() => {
     apiCall.mockReset()
+    globalThis.VG = { curUser: { canElevate: true } }
   })
 
   it('createUser calls createUser op with elevate and body', async () => {
     apiCall.mockResolvedValue({ userId: 1 })
-    const body = { username: 'a@b.com', villageGrants: [] }
+    const body = { username: 'a@b.com', roleGrants: [] }
     const result = await createUser(body)
     expect(apiCall).toHaveBeenCalledWith('createUser', { elevate: true }, body)
     expect(result).toEqual({ userId: 1 })
@@ -32,5 +33,14 @@ describe('userApi', () => {
     const result = await deleteUser(5)
     expect(apiCall).toHaveBeenCalledWith('deleteUser', { userId: 5, elevate: true, projection: ['statistics'] })
     expect(result).toEqual({ userId: 5, status: 'unavailable' })
+  })
+
+  it('getUsersWithGrants requests the grants and volunteer projections', async () => {
+    apiCall.mockResolvedValue([])
+    await getUsersWithGrants()
+    expect(apiCall).toHaveBeenCalledWith(
+      'getUsers',
+      expect.objectContaining({ projection: ['grants', 'volunteer'] })
+    )
   })
 })

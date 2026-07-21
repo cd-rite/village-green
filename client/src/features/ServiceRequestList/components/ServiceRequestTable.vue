@@ -7,6 +7,7 @@ import Button from 'primevue/button'
 import Select from 'primevue/select'
 import { useAnalytics } from '../../../shared/composables/useAnalytics.js'
 import { useStatusSeverity } from '../../../shared/composables/useStatusSeverity.js'
+import { formatServiceDate } from '../lib/timeFields.js'
 
 defineOptions({ name: 'ServiceRequestTable' })
 
@@ -31,10 +32,6 @@ const rowClass = computed(() => {
   return (row) => String(row.serviceRequestId) === String(id) ? 'row-flash' : null
 })
 
-function formatDate(dateStr) {
-  if (!dateStr) return '—'
-  return new Date(dateStr).toLocaleDateString()
-}
 </script>
 
 <template>
@@ -55,7 +52,7 @@ function formatDate(dateStr) {
       row-hover
       paginator
       :rows="pageRows"
-      sort-field="startAt"
+      sort-field="serviceDate"
       :sort-order="1"
       class="request-table-responsive desktop-only"
       :row-class="rowClass"
@@ -78,13 +75,13 @@ function formatDate(dateStr) {
         </div>
       </template>
 
-      <Column field="startAt" header="Date" sortable style="width: 12%">
+      <Column field="serviceDate" header="Date" sortable style="width: 17%">
         <template #body="slotProps">
-          {{ slotProps.data.startAt ? formatDate(slotProps.data.startAt) : '—' }}
+          {{ formatServiceDate(slotProps.data.serviceDate, { weekday: true }) || '—' }}
         </template>
       </Column>
-      <Column v-if="showVillageColumn" field="villageName" header="Village" sortable style="width: 15%"></Column>
-      <Column field="serviceName" header="Service" sortable style="width: 20%"></Column>
+      <Column v-if="showVillageColumn" field="villageName" header="Village" sortable style="width: 12%"></Column>
+      <Column field="serviceName" header="Service" sortable style="width: 18%"></Column>
       <Column field="status" header="Status" sortable headerClass="text-center" style="width: 12%;">
         <template #body="slotProps">
           <Tag :value="slotProps.data.status" :severity="getStatusSeverity(slotProps.data.status)" />
@@ -93,7 +90,7 @@ function formatDate(dateStr) {
       <Column field="memberFullName" header="Member" sortable style="width: 15%"></Column>
       <Column field="volunteerFullName" header="Volunteer" sortable style="width: 15%"></Column>
       <Column field="city" header="Destination" sortable style="width: 13%"></Column>
-      <Column field="displayNumber" header="#" sortable style="width: 10%;">
+      <Column field="displayNumber" header="#" sortable style="width: 6%;">
           
         <template #body="slotProps">{{ slotProps.data.displayNumber ?? '—' }}</template>
       </Column>
@@ -121,7 +118,7 @@ function formatDate(dateStr) {
         <div class="card-row"><span class="label">#:</span><span>{{ request.displayNumber ?? '—' }}</span></div>
         <div class="card-row"><span class="label">Member:</span><span>{{ request.memberFullName ?? '—' }}</span></div>
         <div class="card-row"><span class="label">Volunteer:</span><span>{{ request.volunteerFullName ?? '—' }}</span></div>
-        <div class="card-row"><span class="label">Start:</span><span>{{ request.startAt ? formatDate(request.startAt) : '—' }}</span></div>
+        <div class="card-row"><span class="label">Start:</span><span>{{ formatServiceDate(request.serviceDate, { weekday: true }) || '—' }}</span></div>
         <div class="card-row"><span class="label">City:</span><span>{{ request.city ?? '—' }}</span></div>
       </div>
     </div>

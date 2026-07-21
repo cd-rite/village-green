@@ -14,10 +14,16 @@ const config = {
     },
     settings: {
         lastAccessResolution: 60,
-        // Supported VG_DEV_RESPONSE_VALIDATION values: 
+        // Server-side only. Never expose via getClientEnv().
+        bootstrapAdmin: process.env.VG_BOOTSTRAP_ADMIN,
+        // Supported VG_DEV_RESPONSE_VALIDATION values:
         // "logOnly" (logs failing response, but still sends them) 
         // "none"(no validation performed)
         responseValidation: process.env.VG_DEV_RESPONSE_VALIDATION || "none",
+        // The deployment's civil timezone. serviceDate values are wall-clock
+        // civil dates in this zone; used to resolve "today" for date-range
+        // defaults so boundaries match the users' calendar, not the server's.
+        civilTimeZone: process.env.VG_CIVIL_TZ || "America/New_York",
         dependencyRetries: process.env.VG_DEPENDENCY_RETRIES || 24
     },
     client: {
@@ -143,6 +149,16 @@ const config = {
             if (isNaN(val) || val < 1) return 365
             return val
         })(),
+    },
+    enrollment: {
+        // Sidecar webhook for the fire-and-forget PIN fast path.
+        // Server-side only. Never expose via getClientEnv().
+        sidecarUrl: process.env.VG_ENROLL_SIDECAR_URL || 'http://127.0.0.1:8125/internal/send-pin',
+        // Shared secret attached as `Authorization: Bearer <key>` on the PIN
+        // POST; must match the sidecar's VG_ENROLL_SIDECAR_KEY. Unset => the
+        // API skips the POST and logs an error (fail-closed).
+        // Server-side only. Never expose via getClientEnv().
+        sidecarKey: process.env.VG_ENROLL_SIDECAR_KEY
     }
 }
 
